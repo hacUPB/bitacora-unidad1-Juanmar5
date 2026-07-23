@@ -7,45 +7,44 @@ El siguiente programa está escrito en el lenguaje ensamblador del computador Ha
 Analiza el siguiente programa (está en lenguaje ensamblador).
 
 ```nasm
-			@1
-			D=A
-			@2
-			D=D+A
-			@16
-			M=D
+@1
+D=A
+@2
+D=D+A
+@16
+M=D
 (END)
-			@END
-			0;JMP
+@END
+0;JMP
 ```
 
-**¿Qué crees que haga este programa?**
-
-Para responder a esta pregunta vamos a analizarlo paso a paso usando un simulador de la CPU Hack que está **aquí**.
-
-Para ejecutar este programa la CPU realiza un **ciclo** constante llamado Fetch-Decode-Execute.
-
-El ciclo Fetch-Decode-Execute describe cómo la CPU ejecuta instrucciones de un programa. Aquí está explicado de forma breve y simple:
-
-**Fetch (buscar):** la CPU obtiene (lee) la siguiente instrucción desde la memoria. El contador de programa (PC) indica dónde se encuentra esa instrucción en la memoria ROM.
-
-**Decode (decodificar):** la CPU interpreta la instrucción que acaba de leer. Esto significa entender qué operación debe realizarse y qué datos o recursos necesita.
-
-**Execute (ejecutar):** la CPU realiza la operación indicada. Por ejemplo, puede ser una operación matemática, mover datos entre registros, o acceder a la memoria.
-
-Este ciclo se repite continuamente mientras la computadora esté encendida, procesando instrucciones una tras otra. Es la base del funcionamiento de cualquier procesador.
-
-## 🧐**🧪✍️ Experimento**
+## **Experimento**
 
 Ahora es tu turno. Crea un archivo llamado `program.asm` y copia el código del programa anterior. Ejecuta el programa en el simulador de la CPU Hack y observa cómo se comporta. ¿Qué sucede? ¿Qué valor se almacena en la dirección de memoria 16? ¿Por qué crees que es ese valor? ¿Qué instrucciones se ejecutan en cada ciclo Fetch-Decode-Execute? ¿Qué cambios observas en el contenido de la memoria y los registros? ¿Qué instrucciones se ejecutan en cada ciclo Fetch-Decode-Execute?
+	> El programa apunta a la dirección de 1 y almacena la dirección como valor en D, luego apunta a la dirección 2 y en D se almacena el valor que ya tenía guardado sumado a la dirección a la que apunta, es decir 1+2=3, ahora apunta a la dirección 16 y en la RAM de esa dirección guarda el valor de 16, con lo cual 16 en RAM tiene como valor 3, va a la etiqueta para lockear un bucle, efectivamente terminando el proceso.
+ 
 
-## 🧐**🧪✍️ Experimento**
+## **Experimento**
 
 Escribe un programa en lenguaje ensablador que sume los números 5 y 10, y almacene el resultado en la dirección de memoria 20. Utiliza el simulador de la CPU Hack para ejecutar tu programa y verifica que el resultado es correcto.
 
-## 📤**Bitácora**
+```nasm
+@5
+D=A
+@10
+D=D+A
+@20
+M=D
+(END)
+@END
+0;JMP
+```
+
+## **Bitácora**
 
 Reporta tus observaciones para cada experimento en tu bitácora de aprendizaje.
 ¿Qué diferencia hay entre los datos almacenados en la memoria ROM y en la RAM?
+	> Los datos almacenados en la ROM son efímeros y no se quedan guardados, solo se leen como pasos, mientras que los de la RAM sí y siempre ocupan un espacio en la memoria en vez de borrarse con cada paso u operación
 
 
 ### Actividad 3: Explorando la arquitectura del computador Hack
@@ -67,14 +66,14 @@ En **“este”** enlace está la documentación del computador Hack.
 @SCREEN
 D=A
 @i
-M=D
+M=D //i=16384
 
 (READKEYBOARD)
 @KBD
 D=M
 @KEYPRESSED
-D;JNE
-@i
+D;JNE // si valor en D /=/ salta a keypressed (que sería si se toca una tecla en el keyboard)
+@i //al no presionarse tecla, realiza este bucle
 D=M
 @SCREEN
 D=D-A
@@ -87,8 +86,8 @@ M=0
 @READKEYBOARD
 0;JMP
 
-(KEYPRESSED)
-@i
+(KEYPRESSED) // Toma culquier tecla porque basta con que sea diferente de cero
+@i //Al presionar tecla, realiza este bucle
 D=M
 @KBD
 D=D-A
