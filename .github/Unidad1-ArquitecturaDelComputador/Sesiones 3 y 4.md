@@ -201,57 +201,191 @@ M=D // Almacena el valor de D (0) en la dirección 7
 ```
 
 ```asm
-@1
-D=A
+@i
+M=1        // i = 1 (contador)
 @12
-M=D
+M=0        // suma = 0 (acumulador, empieza en 0 porque aún no sumamos nada)
 (SUMLOOP)
-@12
-D=M
-A=D
-D=D+A
-M=D
+@i
+D=M        
 @5
-D=D-A
+D=D-A      
+@END
+D;JGT      // si i > 5, termina
+@i
+D=M        
+@12
+M=D+M      
+@i
+M=M+1      
 @SUMLOOP
-D;JGE
+0;JMP      // vuelve al inicio del bucle
+(END)
+@END
+0;JMP
 ```
 
 ### Actividad integrada: Dibujando un punto en la pantalla
 
-Vamos a resolver juntos este problema:
 
-La pantalla del computador Hack se controla a través de un mapa de memoria que comienza en la dirección 16384 (SCREEN). Cada bit en este mapa de memoria representa un pixel en la pantalla (1 = negro, 0 = blanco). Escribe un programa que dibuje un punto negro en la esquina superior izquierda de la pantalla. (Recuerda que la esquina superior izquierda corresponde al primer bit del primer word en la dirección SCREEN).
-
+```
 Traduce este programa a lenguaje C++ para que relaciones cómo los conceptos de alto nivel se traducen a bajo nivel.
 
-## 📤 **Bitácora**
+## **Bitácora**
 
 - Escribe tu mismo ambos programas.
 - Simula paso a paso el programa en ensamblador. Recuerda la metodología: predice, ejecuta, observa y reflexiona.
+```
+
+``` asm
+@1
+D=A
+@SCREEN
+M=D 
+(END)
+@END
+0;JMP
+```
+![alt text](image-4.png)
+
+``` cpp
+#include <cstdint>
+
+uint16_t screen[8192] = {0}; // memoria mapeada de pantalla: 32 words x 256 filas
+
+int main() {
+    screen[0] = 1; // enciende el bit 0 -> pixel superior izquierdo en negro
+    return 0;
+}
+```
 
 ### Actividad integrada: Dibujando una línea horizontal
 
-Vamos a resolver juntos este problema:
 
-Modifica el programa anterior para que dibuje una línea horizontal negra de 16 pixeles de largo en la esquina superior izquierda de la pantalla. (Recuerda que cada word en la memoria representa 16 pixeles).
-
-Traduce este programa a lenguaje C++ para que relaciones cómo los conceptos de alto nivel se traducen a bajo nivel.
-
-## 📤 **Bitácora**
+```
+## **Bitácora**
 
 - Escribe tu mismo los programas.
 - Simula paso a paso el programa ensamblador. Recuerda la metodología: predice, ejecuta, observa y reflexiona.
+```
 
+```asm
+@SCREEN
+M=-1 
+(END)
+@END
+0;JMP
+```
+![alt text](image-5.png)
+```cpp
+#include <cstdint>
+
+uint16_t screen[8192] = {0};
+
+int main() {
+    screen[0] = 0xFFFF; // todos los bits en 1 -> línea de 16 pixeles negra
+    return 0;
+}
+```
+
+```
 ### Actividad integrada: Entrada salida interactiva
 
-Modifica el programa de la actividad anterior de tal manera que puedas mover la línea horizontal de derecha a izquierda usando las teclas **d** e **i** respectivamente. Tu programa no tiene que verificar si la línea se sale de la pantalla.
-
-Traduce este programa a lenguaje C++ para que relaciones cómo los conceptos de alto nivel se traducen a bajo nivel.
-
-## 📤 **Bitácora**
+```
+## **Bitácora**
 
 - Escribe los programas.
 - Simula paso a paso en lenguaje ensamblador. Recuerda la metodología: predice, ejecuta, observa y reflexiona.
+```
+``` asm
+@i
+M=0
+
+(LOOP)
+@i
+D=M
+@SCREEN
+A=D+A
+M=0    
+
+@KBD
+D=M
+@100
+D=D-A
+@MOVERIGHT
+D;JEQ        
+
+@KBD
+D=M
+@105
+D=D-A
+@MOVELEFT
+D;JEQ      
+
+@DRAW
+0;JMP     
+
+(MOVERIGHT)
+@i
+M=M+1
+@DRAW
+0;JMP
+
+(MOVELEFT)
+@i
+M=M-1
+@DRAW
+0;JMP
+
+(DRAW)
+@i
+D=M
+@SCREEN
+A=D+A
+M=-1        
+
+(WAITRELEASE)
+@KBD
+D=M
+@WAITRELEASE
+D;JNE        
+
+@LOOP
+0;JMP
+```
+![alt text](image-6.png)
+```cpp
+#include <cstdint>
+
+uint16_t screen[8192] = {0}; // memoria mapeada de pantalla: 32 words x 256 filas
+int i = 0;                   // posición actual de la línea (offset en words desde SCREEN)
+
+char readKeyboard(); // simula leer la dirección KBD (0 = ninguna tecla presionada)
+
+int main() {
+    while (true) {
+        screen[i] = 0; // borra la línea en la posición actual
+
+        char key = readKeyboard();
+
+        if (key == 'd') {
+            i = i + 1; // mover a la derecha
+        } else if (key == 'i') {
+            i = i - 1; // mover a la izquierda
+        }
+        // si es cualquier otra tecla (o ninguna), i no cambia y se redibuja en el mismo sitio
+
+        screen[i] = 0xFFFF; // dibuja la línea en la nueva posición
+
+        // debounce: espera a que se suelte la tecla antes de repetir el ciclo
+        while (readKeyboard() != 0) {
+            // no hace nada, solo espera
+        }
+    }
+
+    return 0;
+}
+```
+
 
 https://confusion-snapper-025.notion.site/Sesiones-3-y-4-39ce8161b2a18018a926c17f32c49926
