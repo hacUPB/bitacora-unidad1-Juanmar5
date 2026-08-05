@@ -56,22 +56,23 @@ M=M+1
 
 #### El lenguaje tiene solo dos tipos:
 
-Instrucción A (@valor o @símbolo): carga un valor de 15 bits en el registro A. Ej: @SCREEN, @i, @KEYPRESSED.
-Instrucción C (dest=comp;jump): ejecuta una computación de la ALU y opcionalmente guarda el resultado y/o salta. Ej: D=D-A, D;JLE, 0;JMP.
+- Instrucción A (@valor o @símbolo): carga un valor de 15 bits en el registro A. Ej: @SCREEN, @i, @KEYPRESSED.   
+- Instrucción C (dest=comp;jump): ejecuta una computación de la ALU y opcionalmente guarda el resultado y/o salta. Ej: D=D-A, D;JLE, 0;JMP.   
 
 #### El programa alterna entre estos dos tipos:
 
-Leer teclado y mostrar en pantalla
-Leer teclado: @KBD + D=M → trae a D el código de la tecla actual.
-Escribir pantalla: se usa i como puntero a una palabra de la memoria de pantalla. A=M (donde M es RAM[i]) hace que A apunte a esa palabra de pantalla, y luego M=-1 (todos los bits en 1 = negro) o M=0 (blanco) pinta 16 píxeles horizontales de una vez.
+- Leer teclado y mostrar en pantalla   
+- Leer teclado: @KBD + D=M → trae a D el código de la tecla actual.   
+- Escribir pantalla: se usa i como puntero a una palabra de la memoria de pantalla. A=M (donde M es RAM[i]) hace que A apunte a esa palabra de pantalla, y luego M=-1 (todos los bits en 1 = negro) o M=0 (blanco) pinta 16 píxeles horizontales de una vez.   
 
 El bucle se simula con etiqueta + salto condicional o incondicional hacia atrás:
 
+```
 (READKEYBOARD)
 etc
 @READKEYBOARD
 0;JMP     // salto incondicional (0 siempre es "verdadero" para JMP) → vuelve a la etiqueta
-
+```
 
 ``` asm
 @i
@@ -82,17 +83,17 @@ D=D-A       // D = i - SCREEN
 D;JLE       // si D <= 0, salta (equivale a "if (i - SCREEN <= 0) goto READKEYBOARD")
 ```
 # Paso - Instrucción- Predicción
-1|	@SCREEN|	            A = 16384
-2|	D=A|	                D = 16384
-3|	@i|	                    A = dirección de i (ej. 16)
-4|	M=D|	                RAM[16] = 16384 → i queda "apuntando" justo después de la pantalla
-5|	@KBD|	                A = 24576
-6|	D=M|	                D = RAM[24576] = valor de tecla (0 si nada presionado)
-7|	@KEYPRESSED|	        A = dirección de la etiqueta KEYPRESSED
-8|	D;JNE|	                si D≠0 salta; si no hay tecla, D=0 → no salta, continúa
-9|	@i → D=M|	            D = 16384
-10|	@SCREEN → D=D-A|        D = 16384-16384 = 0
-11|	@READKEYBOARD → D;JLE|	D=0 → 0≤0 es verdadero → salta a READKEYBOARD (pantalla ya está limpia, no hay nada que borrar)
+1|	@SCREEN|	  &emsp;  &emsp;    &emsp;    A = 16384   
+2|	D=A|	    &emsp;     &emsp;  &emsp;       D = 16384   
+3|	@i|	        &emsp;        &emsp;  &emsp;    A = dirección de i (ej. 16)   
+4|	M=D|	    &emsp;     &emsp;  &emsp;       RAM[16] = 16384 → i queda "apuntando" justo después de la pantalla   
+5|	@KBD|	     &emsp;   &emsp;   &emsp;     A = 24576   
+6|	D=M|	        &emsp;  &emsp;  &emsp;    D = RAM[24576] = valor de tecla (0 si nada presionado)   
+7|	@KEYPRESSED|	&emsp;   &emsp;  &emsp;   A = dirección de la etiqueta KEYPRESSED   
+8|	D;JNE|	          &emsp;  &emsp;  &emsp;  si D≠0 salta; si no hay tecla, D=0 → no salta, continúa   
+9|	@i → D=M|	     &emsp;  &emsp;   &emsp;  D = 16384   
+10|	@SCREEN → D=D-A|     &emsp; &emsp; &emsp; D = 16384-16384 = 0   
+11|	@READKEYBOARD → D;JLE|	&emsp; &emsp;  &emsp;  D=0 → 0≤0 es verdadero → salta a READKEYBOARD (pantalla ya está limpia, no hay nada que borrar)   
 
 
 ```
@@ -248,7 +249,7 @@ M=D
 ```
 ![alt text](image-4.png)
 
-``` cpp
+```cpp
 #include <cstdint>
 
 uint16_t screen[8192] = {0}; // memoria mapeada de pantalla: 32 words x 256 filas
@@ -270,8 +271,29 @@ int main() {
 ```
 
 ```asm
+@i
+M=0           
+
+(LOOP)
+@i
+D=M
+@32
+D=D-A          // D = i - 32
+@END
+D;JGE          // si i >= 32, ya recorrimos toda la fila -> termina
+
+@i
+D=M
 @SCREEN
-M=-1 
+A=D+A         
+M=-1           // pinta esos 16 pixeles de negro
+
+@i
+M=M+1          // i++
+
+@LOOP
+0;JMP
+
 (END)
 @END
 0;JMP
@@ -283,12 +305,14 @@ M=-1
 uint16_t screen[8192] = {0};
 
 int main() {
-    screen[0] = 0xFFFF; // todos los bits en 1 -> línea de 16 pixeles negra
+    for (int i = 0; i < 32; i++) {
+        screen[i] = 0xFFFF; // cada word cubre 16 pixeles; 32 words = fila completa (512 px)
+    }
     return 0;
 }
 ```
 
-```
+
 ### Actividad integrada: Entrada salida interactiva
 
 ```

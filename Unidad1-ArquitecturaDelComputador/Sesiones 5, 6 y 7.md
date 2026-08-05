@@ -92,6 +92,7 @@ M=D
 @END
 0;JMP
 ```
+![alt text](image-8.png)
 
 Programa 2
 ```asm
@@ -120,6 +121,7 @@ M=D
 @END
 0;JMP
 ```
+![alt text](image-9.png)
 
 ### Actividad integrada: Experimenta con arreglos
 
