@@ -299,6 +299,7 @@ M=M+1          // i++
 0;JMP
 ```
 ![alt text](image-5.png)
+![alt text](image-10.png)
 ```cpp
 #include <cstdint>
 
