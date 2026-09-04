@@ -1,0 +1,146 @@
+# Sesiones 5, 6 y 7
+
+
+## Sesión 5. Traducción de ciclos y condicionales entre C++ y ensamblador
+
+### Actividad integrada: Convierte un ciclo while en un ciclo for
+
+
+Vamos a transformar este programa a su equivalente usando un ciclo for:
+
+```
+- Analiza los programas con while y for asegúrate de entender por qué son equivalentes.
+- Convierte la versión del for a ensamblador.
+- No olvides comprobar el funcionamiento de los programas en ensamblador en el simulador.
+- Compara las versiones en ensamblador del while y del for. ¿Qué puedes concluir?
+
+## **Bitácora**
+
+Escribe en tu bitácora el programa en ensamblador y las conclusiones que has sacado de la comparación entre los dos programas.
+```
+```asm
+@sum
+M=0       
+@i
+M=1       
+
+(LOOP)
+@i
+D=M        
+@100
+D=D-A      
+@END
+D;JGT      
+@i
+D=M        
+@sum
+M=D+M      
+@i
+M=M+1      
+@LOOP
+0;JMP      
+
+(END)
+@END
+0;JMP      
+```
+![alt text](image-7.png)
+Conclusivamente, en assembly, while y for se traducen como lo mismo
+
+## Sesión 6. Punteros, arreglos y relación entre direcciones de memoria y código de alto nivel
+
+### Actividad integrada: Punteros
+
+```
+## **Bitácora**
+
+Convierte estos programas a ensamblador y realiza la simulación paso a paso. Recuerda la metodología: predice, ejecuta, observa y reflexiona.
+```
+
+```cpp
+int a = 10;
+int* p;
+p = &a;
+*p = 20;
+
+int a = 10;
+int b = 5;
+int *p;
+p = &a;
+b = *p;
+```
+
+Programa 1
+``` asm
+@10
+D=A
+@a
+M=D        
+
+@a
+D=A        
+@p
+M=D        
+
+@20
+D=A
+@p
+A=M        
+M=D        
+
+(END)
+@END
+0;JMP
+```
+![alt text](image-8.png)
+
+Programa 2
+```asm
+@10
+D=A
+@a
+M=D        
+
+@5
+D=A
+@b
+M=D        
+
+@a
+D=A
+@p
+M=D        
+
+@p
+A=M        
+D=M        
+@b
+M=D        
+
+(END)
+@END
+0;JMP
+```
+![alt text](image-9.png)
+
+### Actividad integrada: Experimenta con arreglos
+
+Los arreglos son colecciones de datos en la memoria.
+
+Considera el siguiente programa
+
+```cpp
+int arr[] = {33,44,55,12,34,56,78,98,76,54};
+int sum = 0;
+for (int j = 0; j < 10; j++) {
+	sum = sum + arr[j];
+	}
+```
+
+## 📤 **Bitácora**
+
+- Implementa el programa anterior en lenguaje ensamblador aplicando el concepto de punteros.
+- Considera que los datos del arreglo están almacenados **desde** la dirección 16. Inicializa el arreglo en lenguaje ensamblador.
+- Simula paso a paso el programa en ensamblador. Recuerda la metodología: predice, ejecuta, observa y reflexiona.
+- Construye tu programa PASO A PASO mediante pruebas. Indica qué característica vas a implementar con cada prueba y cómo la probaste. Incluye capturas de pantalla de las pruebas que realizaste.
+- Muestra el programa final y cómo lo probaste. Incluye capturas de pantalla.
