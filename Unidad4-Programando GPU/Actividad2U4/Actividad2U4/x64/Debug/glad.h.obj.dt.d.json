@@ -1,0 +1,12 @@
+{
+    "Version": "1.2",
+    "Data": {
+        "Source": "c:\\users\\user\\documents\\github\\bitacora-unidad1-juanmar5\\unidad4-programando gpu\\actividad2u4\\external\\glad\\include\\glad\\glad.h",
+        "ProvidedModule": "",
+        "Includes": [
+            "c:\\users\\user\\documents\\github\\bitacora-unidad1-juanmar5\\unidad4-programando gpu\\actividad2u4\\external\\glad\\include\\khr\\khrplatform.h"
+        ],
+        "ImportedModules": [],
+        "ImportedHeaderUnits": []
+    }
+}
