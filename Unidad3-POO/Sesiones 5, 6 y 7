@@ -1,0 +1,281 @@
+# Patrones de Diseño
+
+# Sesión 5: Investigación
+
+# **Actividad 8**
+
+(captura estado inicial)
+
+### 1. ¿Cómo se interactúa?
+Solo con el teclado (y el mouse influye en dos de los modos):
+- **a** → las partículas se van hacia el mouse, como si las atrajera un imán. Si muevo el mouse, lo persiguen (captura)
+- **r** → lo contrario, huyen del mouse y se van a los bordes (captura)
+- **s** → se van frenando poco a poco hasta quedar quietas (captura)
+- **n** → vuelven a moverse suave y para donde quieran, como al inicio (captura)
+- Cualquier otra tecla no hace nada
+- Las partículas nunca se salen de la ventana: cuando tocan el borde rebotan
+
+### 2. ¿Hay diferentes tipos de partículas?
+Sí, hay 3 tipos que se distinguen por color y tamaño:
+- **Rojas:** pequeñas y muchas (como 100), se llaman "star"
+- **Verdes:** medianas y poquitas (como 5), son las "shooting_star", al principio se mueven más rápido que las demás
+- **Azules:** las más grandes (como 10), son los "planet"
+
+Al principio no se comportan exactamente igual: todas se mueven suave y aleatorio, pero las verdes van más rápido. Pero cuando presiono una tecla, todas reaccionan igual, sin importar el tipo.
+Detalle curioso: después de presionar n, las verdes ya no vuelven a ser más rápidas, quedan igual de lentas que las otras.
+
+### 3. Capturas
+![alt text](image-16.png)
+![alt text](image-17.png)
+![alt text](image-18.png)
+![alt text](image-19.png)
+
+### 4. Hipótesis: ¿qué pasa detrás de cámaras?
+Creo que cuando presiono una tecla, la app (ofApp) le avisa a todas las partículas al mismo tiempo, como un mensaje que dice "atraer" o "detenerse". Cada partícula recibe ese aviso y se cambia a un "modo" diferente. Cada modo tiene su propia regla pa moverse (ir al mouse, huir, frenar, moverse libre), y la partícula en cada frame usa la regla del modo en que está.
+Lo de los 3 tipos de partícula creo que lo decide una especie de "fábrica" que las crea al principio con diferente color, tamaño y velocidad.
+
+
+# **Actividad 9: Patrón Observer**
+
+## Análisis del caso de estudio
+
+### 1. Roles
+- **Observer (interfaz):** la clase `Observer`. Define un solo método: `onNotify(const std::string& event)`, que es puro virtual (= 0), o sea que el que herede está obligado a implementarlo
+- **Subject:** la clase `Subject`. Tiene la lista de observadores (`observers`) y 3 métodos:
+  - `addObserver` → agrega a la lista (y revisa que no esté repetido)
+  - `removeObserver` → lo saca de la lista
+  - `notify` → le avisa a todos los de la lista
+- **ConcreteSubject:** `ofApp`, porque hereda de Subject y es el que manda los avisos cuando presiono una tecla
+- **ConcreteObserver:** `Particle`, porque hereda de Observer, implementa onNotify y es la que recibe el aviso y reacciona cambiando su comportamiento
+
+### 2. Flujo de notificación
+- Al presionar **a**, `keyPressed` entra al case 'a' y llama `notify("attract")`
+- `notify` recorre toda la lista de observadores y a cada uno le llama `onNotify("attract")`. No sabe ni le importa que sean partículas, solo sabe que son Observer
+- En `Particle::onNotify`, como el evento es "attract", la partícula se cambia de estado con `setState(new AttractState())`. Desde ahí empieza a ir hacia el mouse
+
+### 3. Registro y eliminación
+- Se registran en `ofApp::setup()`: cada vez que la fábrica crea una partícula, se mete al vector y justo después se llama `addObserver(p)`
+- Se eliminan con `removeObserver`, que hoy solo se usa en el destructor de `ofApp`
+- El destructor es importante porque antes de borrar cada partícula (delete) la saca de la lista. Si no, la lista quedaría con punteros a partículas que ya no existen, y si alguien llamara notify después, intentaría avisarle a memoria basura y el programa se podría totear
+- Si en el futuro una partícula muriera
+
+
+
+# **Actividad 10: Patrón Factory Method**
+
+## Análisis del caso de estudio
+
+### 1. La Factory
+- La fábrica es la clase `ParticleFactory`
+- El método fábrica es `createParticle(const std::string& type)`, y es **estático** (static), o sea que se usa sin crear un objeto ParticleFactory: `ParticleFactory::createParticle("star")`
+- Devuelve un `Particle*` (un puntero a una partícula nueva creada con new)
+
+### 2. Proceso de creación
+- Primero crea una Particle normal con `new Particle()` y después, según el texto que le llegue, le cambia las propiedades con if/else:
+  - "star" → pequeña y roja
+  - "shooting_star" → mediana, verde y 3 veces más rápida
+  - "planet" → grande y azul
+- Lo único que necesita es el nombre del tipo (un string)
+- Si le paso un tipo desconocido (por ejemplo "cometa") no sale error: devuelve la partícula tal como la dejó el constructor, blanca y con tamaño random. El problema es que un error de digitación pasa sin que nadie se dé cuenta
+- **Cómo lo mejoraría:**
+  - Mostrar un aviso en consola (ofLogWarning) cuando el tipo no existe
+  - O devolver nullptr pa que el que la pidió sepa que algo falló
+  - O mejor todavía, usar un `enum class ParticleType { Star, ShootingStar, Planet }` en vez de strings, así si escribo mal el tipo el compilador me avisa antes de ejecutar
+
+### 3. Uso de la Factory
+- En `setup()` hay 3 for: uno crea 100 "star", otro 5 "shooting_star" y otro 10 "planet". En cada vuelta se pide la partícula a la fábrica, se mete al vector y se registra como observador
+- **Sin la fábrica**, setup se vería así:
+
+```cpp
+for (int i = 0; i < 100; ++i) {
+    Particle* p = new Particle();
+    p->size = ofRandom(2.0f, 4.0f);
+    p->color = ofColor(255, 0, 0);
+    particles.push_back(p);
+    addObserver(p);
+}
+for (int i = 0; i < 5; ++i) {
+    Particle* p = new Particle();
+    p->size = ofRandom(3.0f, 6.0f);
+    p->color = ofColor(0, 255, 0);
+    p->velocity *= 3.0f;
+    particles.push_back(p);
+    addObserver(p);
+}
+// ... y lo mismo pa los planetas
+```
+
+Es más largo, más revuelto, y si en otra parte del programa necesito crear una "star" tendría que copiar y pegar esa configuración, con el riesgo de que queden diferentes.
+
+## Reporte
+
+### 1. Propósito del patrón
+Es tener un solo lugar encargado de crear los objetos. El que necesita un objeto solo pide "dame uno de este tipo" y no le importa cómo se arma por dentro.
+Resuelve el problema de tener el `new` y toda la configuración regada por todo el código. Si cambia la forma de crear algo, solo se cambia en la fábrica.
+
+### 2. Ventajas de usar ParticleFactory en setup
+- **SRP (una responsabilidad por clase):** ofApp se encarga de manejar la escena (actualizar, dibujar, teclas) y la fábrica se encarga de saber cómo se arma cada tipo. Cada uno con lo suyo
+- **Legibilidad:** `createParticle("planet")` se entiende de una, no hay que leer 3 líneas de tamaños y colores pa saber qué se está creando
+- **Sin código repetido:** la receta de cada tipo está escrita una sola vez
+- **Fácil de extender:** pa un tipo nuevo solo agrego un caso en la fábrica, no toco la lógica de ofApp
+- **Fácil de cambiar:** si quiero que los planetas sean verdes, cambio una línea en un solo lugar
+
+### 3. Agregar "black_hole"
+Pasos:
+1. En `ParticleFactory::createParticle` agrego otro caso:
+   - `else if (type == "black_hole")`
+   - tamaño grande (por ejemplo `ofRandom(15, 25)`)
+   - color negro `ofColor(0)`
+   - velocidad muy lenta (por ejemplo `velocity *= 0.1f`)
+2. Pa que aparezcan en pantalla, en `setup` agrego un for más que pida `createParticle("black_hole")`, lo meta al vector y lo registre con addObserver
+
+¿Toca modificar setup? Sí, pero solo pa decir **cuántos** quiero, no **cómo** se hacen. La receta del agujero negro vive en la fábrica. Si ya hubiera otra parte del código que crea partículas por nombre (por ejemplo, desde un archivo de configuración o con una tecla), ni siquiera tendría que tocar setup.
+
+Detalle: el fondo es negro (`ofBackground(0)`), entonces un agujero negro de color negro sería invisible. Le pondría un borde de otro color o cambiaría un poco el tono pa que se vea.
+
+### 4. Estático vs método de instancia
+**Ventajas de que sea estático:**
+- Más simple de usar: no hay que crear ni guardar un objeto fábrica, se llama directo
+- La fábrica no guarda nada (no tiene datos), entonces no tiene sentido crear objetos de ella
+
+**Desventajas:**
+- No se puede cambiar la fábrica por otra mientras corre el programa (por ejemplo una fábrica pa "modo noche" que cree todo más oscuro)
+- No puede ser virtual, entonces no se puede usar polimorfismo con ella ni hacer subclases de fábricas (que es justo la idea del Factory Method "de verdad")
+- No puede guardar configuración propia (como una paleta de colores o un contador de cuántas partículas ha creado)
+- Es más difícil de reemplazar en pruebas
+
+**Con un método de instancia** se podría tener una clase base `ParticleFactory` con `createParticle` virtual y varias fábricas hijas, y pasarle a ofApp la que quiera usar. Más flexible, pero más código. Pa este ejemplo tan pequeño, el estático es suficiente.
+
+
+
+
+# **Actividad 11: Patrón State**
+
+## Análisis del caso de estudio
+
+### 1. Componentes
+- **Context:** la clase `Particle`. Guarda su estado actual en el miembro privado `State* state`
+- **Interfaz State:** la clase `State`, con 3 métodos:
+  - `update(Particle*)` → puro virtual (= 0), cada estado está obligado a decir cómo se mueve la partícula
+  - `onEnter(Particle*)` → se llama cuando la partícula entra al estado (por defecto no hace nada)
+  - `onExit(Particle*)` → se llama cuando la partícula sale del estado (por defecto no hace nada)
+- **ConcreteStates:**
+  - `NormalState` → se mueve suave y en línea recta con su velocidad
+  - `AttractState` → acelera hacia el mouse
+  - `RepelState` → acelera alejándose del mouse
+  - `StopState` → frena poco a poco (le quita 20% de velocidad cada frame) hasta quedar quieta
+
+### 2. Delegación
+- `Particle::update()` no decide nada del movimiento: si tiene estado, le dice `state->update(this)` y se pasa a sí misma. Después solo revisa que no se salga de la ventana
+- Cada estado tiene su propio update con su propia regla de movimiento. La partícula llama siempre lo mismo, pero lo que pasa depende de qué objeto estado tenga en ese momento. Es polimorfismo otra vez: state es un State*, pero por la vtable se ejecuta el update del estado real
+- Attract y Repel se parecen mucho (los dos usan el mouse), pero uno calcula la dirección hacia el mouse y el otro al revés
+
+### 3. Transiciones
+- La partícula cambia de estado con `setState(nuevoEstado)`
+- Dentro de setState pasa esto, en orden:
+  1. Si ya tenía un estado, le llama `onExit` y lo borra (delete)
+  2. Guarda el nuevo estado
+  3. Le llama `onEnter` al nuevo
+- onEnter y onExit son importantes porque dan un momento fijo pa preparar o limpiar cosas al cambiar, sin meter esa lógica en el update (que corre cada frame)
+- En `NormalState`, `onEnter` le pone una velocidad nueva random y suave. `onExit` no lo usa (queda el vacío de la clase base)
+- Esto explica algo que vi en la Actividad 8: las verdes empiezan rápido porque la fábrica les multiplica la velocidad x3, pero cuando presiono **n**, onEnter les pone una velocidad nueva y pierden ese x3
+- El cambio de estado lo dispara el patrón Observer: al presionar una tecla, ofApp hace notify, a cada partícula le llega onNotify con el evento ("attract", "repel", "stop", "normal") y ahí se llama setState con el estado que corresponde
+
+## Reporte
+
+### 1. Propósito del patrón State
+Sirve pa que un objeto cambie su comportamiento según el estado en que esté, como si se volviera otra clase. Cada comportamiento vive en su propia clase, y el objeto solo le pasa el trabajo al estado que tenga en ese momento.
+Es útil cuando algo tiene varios "modos" claros que cambian cómo actúa (un personaje que camina, salta o nada; un reproductor que reproduce o pausa; un enemigo que patrulla o persigue), y cuando sin el patrón terminaría con un if/switch gigante que crece cada vez que agrego un modo.
+
+### 2. Diagrama de estados
+
+```mermaid
+stateDiagram-v2
+    [*] --> Normal : se crea la partícula
+
+    Normal --> Attract : 'a'
+    Normal --> Repel : 'r'
+    Normal --> Stop : 's'
+
+    Attract --> Normal : 'n'
+    Attract --> Repel : 'r'
+    Attract --> Stop : 's'
+
+    Repel --> Normal : 'n'
+    Repel --> Attract : 'a'
+    Repel --> Stop : 's'
+
+    Stop --> Normal : 'n'
+    Stop --> Attract : 'a'
+    Stop --> Repel : 'r'
+```
+
+- Siempre arranca en Normal (lo pone el constructor de Particle)
+- Desde cualquier estado se puede ir a cualquier otro con su tecla
+- Si presiono la tecla del estado en que ya está, igual se crea un estado nuevo del mismo tipo (se "reinicia"). En Normal eso se nota porque le cambia la velocidad
+
+### 3. Ventajas vs string + if/switch
+Si en vez del patrón tuviera `std::string estadoActual` y un if gigante en update:
+
+- **Cohesión:** cada estado tiene todo su comportamiento junto en una clase. Con el if, todo estaría revuelto en un solo método largo y difícil de leer
+- **Extensibilidad:** pa agregar un estado nuevo (por ejemplo "Orbitar") solo creo una clase nueva que herede de State y la conecto en onNotify. No toco el código de los estados que ya funcionan
+- **Principio Abierto/Cerrado:** el código queda abierto pa agregar cosas nuevas pero cerrado pa modificar lo que ya sirve. Con el switch, cada estado nuevo obliga a abrir y cambiar Particle::update, con riesgo de dañar algo
+- **Menos errores:** con strings un error de digitación ("atract") no lo detecta nadie. Con clases, si escribo mal el nombre no compila
+- **onEnter y onExit gratis:** con el if tendría que inventarme cómo saber cuándo "acabo de entrar" a un estado. Con el patrón ya viene incluido
+
+### 4. onEnter y onExit
+- **onEnter:** preparar a la partícula cuando entra al estado (cambiar color, tamaño, velocidad inicial, arrancar un temporizador)
+- **onExit:** limpiar o devolver lo que el estado cambió, pa que el siguiente estado no herede cosas raras
+
+Ejemplos:
+- `AttractState::onEnter` → ponerle un color más brillante pa que se note que está siendo atraída, o darle un empujoncito inicial hacia el mouse
+- `StopState::onExit` → devolverle una velocidad pequeña pa que no arranque desde cero de golpe, o quitarle un color gris que se le hubiera puesto al detenerse
+- Un caso más general: si un estado guardara el color original en onEnter pa cambiarlo, en onExit se lo devolvería. Así cada estado deja todo como lo encontró
+
+
+
+# Sesión 7: Aplicación
+
+# **Actividad 12**
+
+## Nueva partícula: el Cometa
+
+
+![alt text](image-20.png)
+![alt text](image-21.png)
+![alt text](image-22.png)
+
+### 1. Código fuente
+(pegar ofApp.h, ofApp.cpp y main.cpp, o el link al repositorio)
+
+Cambios principales:
+- `CometParticle`: clase nueva que hereda de Particle
+- `OrbitState`: estado nuevo
+- En Particle, update y draw ahora son virtual pa que el cometa los pueda cambiar
+- La fábrica sabe crear "comet"
+- setup crea 3 cometas
+
+### 2. Factory
+- Agregué el tipo "comet" en `ParticleFactory::createParticle`
+- A diferencia de los otros tipos (que son la misma clase Particle con otro color y tamaño), el cometa es una **clase distinta**. Entonces la fábrica decide qué clase crear: si piden "comet" hace `new CometParticle()`, si no, `new Particle()` y la configura como antes
+- Eso es lo bueno del patrón: ofApp sigue pidiendo `createParticle("comet")` igual que pide una "star", sin saber que por dentro es otra clase. Recibe un Particle* y listo
+- También aproveché pa mejorar lo que vimos en la Actividad 10: si llega un tipo desconocido, ahora sale un aviso en consola (ofLogWarning)
+
+### 3. Observer
+- El cometa hereda de Particle, que a su vez hereda de Observer, entonces ya es un observador
+- En setup, después de crearlo, lo registro con `addObserver(p)` igual que las otras partículas. ofApp no hace nada especial con él
+- Sobreescribí `onNotify` en CometParticle:
+  - Si llega "attract" → se cambia a `OrbitState` (su reacción propia)
+  - Cualquier otro evento → llama `Particle::onNotify(event)`, o sea, reacciona como cualquier partícula
+- Esto muestra la gracia del Observer: ofApp manda el mismo aviso a todos y cada observador decide cómo reaccionar. No tuve que tocar keyPressed ni notify
+
+### 4. State
+- Creé un estado nuevo, `OrbitState`, que hereda de State
+- **onEnter:** calcula a qué distancia está el cometa del mouse (el radio de la órbita) y en qué ángulo, pa que arranque a girar desde donde estaba y no salte
+- **update:** cada frame le suma un poquito al ángulo y mueve el cometa hacia el punto que le toca en el círculo alrededor del mouse. Si muevo el mouse, la órbita lo sigue
+- **onExit:** al salir de la órbita le limito la velocidad, pa que no salga disparado cuando cambio a otro estado
+- Particle (el Context) no cambió nada de su lógica: sigue haciendo `state->update(this)`. El comportamiento nuevo vive completo en su propia clase. Eso es el principio Abierto/Cerrado: agregué algo nuevo sin modificar los estados que ya funcionaban
+- El cometa también usa los estados que ya existían (Normal, Repel, Stop) sin tocarlos
+
+### Polimorfismo (bonus)
+En `ofApp::update` y `draw` el for es el mismo de siempre: `p->update()` y `p->draw()`. Como ahora son virtual, a los cometas se les llama su versión (con la cola) y a las demás la normal, sin ningún if.

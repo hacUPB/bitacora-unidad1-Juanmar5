@@ -1,0 +1,14 @@
+@1
+D=A
+@12
+M=D
+(SUMLOOP)
+@12
+D=M
+A=D
+D=D+A
+M=D
+@5
+D=D-A
+@SUMLOOP
+D;JGE
