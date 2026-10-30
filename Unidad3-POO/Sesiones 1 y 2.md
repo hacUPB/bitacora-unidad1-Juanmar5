@@ -41,6 +41,8 @@
 
 ### Actividad 2: Aplicación (openFrameworks)
 
+![alt text](image.png)
+
 ## 1. Partícula "base"
 
 Existe una clase `Particle` que es como el molde genérico: dice que toda partícula debe poder actualizarse (`update`), dibujarse (`draw`) y saber si ya murió (`isDead`). De ahí se desprenden las dos familias de partículas:
